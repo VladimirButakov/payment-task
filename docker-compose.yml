@@ -11,3 +11,20 @@ services:
             - .:/app:rw
         environment:
             - APP_ENV=dev
+            - DATABASE_URL=postgresql://payment_user:payment_password@postgres:5432/payment_db?serverVersion=16&charset=utf8
+        depends_on:
+            - postgres
+
+    postgres:
+        image: postgres:16-alpine
+        environment:
+            POSTGRES_DB: payment_db
+            POSTGRES_USER: payment_user
+            POSTGRES_PASSWORD: payment_password
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+
+volumes:
+    postgres_data:

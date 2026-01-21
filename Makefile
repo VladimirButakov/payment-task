@@ -1,6 +1,6 @@
 USER_ID=$(shell id -u)
 
-DC = @USER_ID=$(USER_ID) docker compose
+DC = @USER_ID=$(USER_ID) docker-compose
 DC_RUN = ${DC} run --rm sio_test
 DC_EXEC = ${DC} exec sio_test
 
