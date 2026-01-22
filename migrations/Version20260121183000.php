@@ -31,7 +31,7 @@ final class Version20260121183000 extends AbstractMigration
             ('D15', 'percent', 15.00),
             ('F10', 'fixed', 10.00),
             ('P10', 'percent', 10.00),
-            ('P100', 'fixed', 100.00)
+            ('P100', 'percent', 100.00)
         ");
 
         // Добавляем налоги с паттернами валидации

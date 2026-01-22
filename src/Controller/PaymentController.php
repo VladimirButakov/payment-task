@@ -45,7 +45,9 @@ class PaymentController extends AbstractController
             $response->price = $price;
 
             return $this->json($response);
-        } catch (ProductNotFoundException|CouponNotFoundException|TaxNotFoundException|PaymentException|\InvalidArgumentException $e) {
+        } catch (ProductNotFoundException|CouponNotFoundException|TaxNotFoundException|\InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (PaymentException $e) {
             return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
@@ -68,7 +70,9 @@ class PaymentController extends AbstractController
             $response->message = 'Payment processed successfully';
 
             return $this->json($response);
-        } catch (ProductNotFoundException|CouponNotFoundException|TaxNotFoundException|PaymentException|\InvalidArgumentException $e) {
+        } catch (ProductNotFoundException|CouponNotFoundException|TaxNotFoundException|\InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (PaymentException $e) {
             return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
             return $this->json(

@@ -1,0 +1,153 @@
+### Calculate price - Iphone для Германии (100 + 19% = 119.00)
+POST http://127.0.0.1:8337/calculate-price
+Content-Type: application/json
+
+{
+    "product": 1,
+    "taxNumber": "DE123456789"
+}
+
+### Calculate price - Iphone для Греции (100 + 24% = 124.00)
+POST http://127.0.0.1:8337/calculate-price
+Content-Type: application/json
+
+{
+    "product": 1,
+    "taxNumber": "GR123456789"
+}
+
+### Calculate price - Iphone для Греции с купоном D15 (100 - 15% + 24% = 105.40)
+POST http://127.0.0.1:8337/calculate-price
+Content-Type: application/json
+
+{
+    "product": 1,
+    "taxNumber": "GR123456789",
+    "couponCode": "D15"
+}
+
+### Calculate price - Iphone для Италии с фиксированной скидкой F10 (100 - 10 + 22% = 109.80)
+POST http://127.0.0.1:8337/calculate-price
+Content-Type: application/json
+
+{
+    "product": 1,
+    "taxNumber": "IT12345678900",
+    "couponCode": "F10"
+}
+
+### Calculate price - Наушники для Франции (20 + 20% = 24.00)
+POST http://127.0.0.1:8337/calculate-price
+Content-Type: application/json
+
+{
+    "product": 2,
+    "taxNumber": "FRAA123456789"
+}
+
+### Calculate price - Чехол для Германии с купоном P10 (10 - 10% + 19% = 10.71)
+POST http://127.0.0.1:8337/calculate-price
+Content-Type: application/json
+
+{
+    "product": 3,
+    "taxNumber": "DE123456789",
+    "couponCode": "P10"
+}
+
+### Calculate price - ошибка: неверный налоговый номер
+POST http://127.0.0.1:8337/calculate-price
+Content-Type: application/json
+
+{
+    "product": 1,
+    "taxNumber": "DE12345"
+}
+
+### Calculate price - ошибка: несуществующий продукт
+POST http://127.0.0.1:8337/calculate-price
+Content-Type: application/json
+
+{
+    "product": 999,
+    "taxNumber": "DE123456789"
+}
+
+### Calculate price - ошибка: несуществующий купон
+POST http://127.0.0.1:8337/calculate-price
+Content-Type: application/json
+
+{
+    "product": 1,
+    "taxNumber": "DE123456789",
+    "couponCode": "INVALID"
+}
+
+### Calculate price - ошибка: неизвестная страна
+POST http://127.0.0.1:8337/calculate-price
+Content-Type: application/json
+
+{
+    "product": 1,
+    "taxNumber": "XX123456789"
+}
+
+### Purchase - Iphone через PayPal для Германии
+POST http://127.0.0.1:8337/purchase
+Content-Type: application/json
+
+{
+    "product": 1,
+    "taxNumber": "DE123456789",
+    "paymentProcessor": "paypal"
+}
+
+### Purchase - Iphone через Stripe для Италии с купоном
+POST http://127.0.0.1:8337/purchase
+Content-Type: application/json
+
+{
+    "product": 1,
+    "taxNumber": "IT12345678900",
+    "couponCode": "D15",
+    "paymentProcessor": "stripe"
+}
+
+### Purchase - Наушники через PayPal для Франции
+POST http://127.0.0.1:8337/purchase
+Content-Type: application/json
+
+{
+    "product": 2,
+    "taxNumber": "FRAA123456789",
+    "paymentProcessor": "paypal"
+}
+
+### Purchase - ошибка: Stripe требует минимум 100 EUR (Чехол = 10 EUR)
+POST http://127.0.0.1:8337/purchase
+Content-Type: application/json
+
+{
+    "product": 3,
+    "taxNumber": "DE123456789",
+    "paymentProcessor": "stripe"
+}
+
+### Purchase - ошибка: неизвестный платежный процессор
+POST http://127.0.0.1:8337/purchase
+Content-Type: application/json
+
+{
+    "product": 1,
+    "taxNumber": "DE123456789",
+    "paymentProcessor": "unknown"
+}
+
+### Purchase - ошибка: отсутствует платежный процессор
+POST http://127.0.0.1:8337/purchase
+Content-Type: application/json
+
+{
+    "product": 1,
+    "taxNumber": "DE123456789"
+}
