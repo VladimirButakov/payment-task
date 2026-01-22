@@ -10,7 +10,7 @@ PHONY: help
 help: ## This help.
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-init: down build install up success-message console ## Initialize environment
+init: down build install up db-migrate success-message ## Initialize environment
 
 build: ## Build services.
 	${DC} build $(c)
@@ -34,6 +34,21 @@ console: ## Login in console.
 
 install: ## Install dependencies without running the whole application.
 	${DC_RUN} composer install
+
+db-migrate: ## Run database migrations.
+	${DC_EXEC} php bin/console doctrine:migrations:migrate --no-interaction
+
+test: ## Run all tests.
+	${DC_EXEC} vendor/bin/codecept run
+
+test-unit: ## Run unit tests only.
+	${DC_EXEC} vendor/bin/codecept run unit
+
+test-coverage: ## Run tests with coverage report.
+	${DC_EXEC} vendor/bin/codecept run --coverage --coverage-html
+
+codecept-build: ## Build Codeception actors.
+	${DC_EXEC} vendor/bin/codecept build
 
 success-message:
 	@echo "You can now access the application at http://localhost:8337"
