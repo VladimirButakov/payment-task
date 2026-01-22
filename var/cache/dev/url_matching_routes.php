@@ -8,6 +8,10 @@
 return [
     false, // $matchHost
     [ // $staticRoutes
+        '/api/doc.json' => [[['_route' => 'app.swagger', '_controller' => 'nelmio_api_doc.controller.swagger'], null, ['GET' => 0], null, false, false, null]],
+        '/api/doc' => [[['_route' => 'app.swagger_ui', '_controller' => 'nelmio_api_doc.controller.swagger_ui'], null, ['GET' => 0], null, false, false, null]],
+        '/calculate-price' => [[['_route' => 'calculate_price', '_controller' => 'App\\Controller\\PaymentController::calculatePrice'], null, ['POST' => 0], null, false, false, null]],
+        '/purchase' => [[['_route' => 'purchase', '_controller' => 'App\\Controller\\PaymentController::purchase'], null, ['POST' => 0], null, false, false, null]],
     ],
     [ // $regexpList
         0 => '{^(?'

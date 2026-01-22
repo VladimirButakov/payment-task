@@ -17,6 +17,9 @@
       <parameter key="DoctrineBundle">Doctrine\Bundle\DoctrineBundle\DoctrineBundle</parameter>
       <parameter key="DoctrineMigrationsBundle">Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle</parameter>
       <parameter key="MakerBundle">Symfony\Bundle\MakerBundle\MakerBundle</parameter>
+      <parameter key="NelmioApiDocBundle">Nelmio\ApiDocBundle\NelmioApiDocBundle</parameter>
+      <parameter key="TwigBundle">Symfony\Bundle\TwigBundle\TwigBundle</parameter>
+      <parameter key="TwigExtraBundle">Twig\Extra\TwigExtraBundle\TwigExtraBundle</parameter>
     </parameter>
     <parameter key="kernel.bundles_metadata" type="collection">
       <parameter key="FrameworkBundle" type="collection">
@@ -34,6 +37,18 @@
       <parameter key="MakerBundle" type="collection">
         <parameter key="path">/app/vendor/symfony/maker-bundle</parameter>
         <parameter key="namespace">Symfony\Bundle\MakerBundle</parameter>
+      </parameter>
+      <parameter key="NelmioApiDocBundle" type="collection">
+        <parameter key="path">/app/vendor/nelmio/api-doc-bundle</parameter>
+        <parameter key="namespace">Nelmio\ApiDocBundle</parameter>
+      </parameter>
+      <parameter key="TwigBundle" type="collection">
+        <parameter key="path">/app/vendor/symfony/twig-bundle</parameter>
+        <parameter key="namespace">Symfony\Bundle\TwigBundle</parameter>
+      </parameter>
+      <parameter key="TwigExtraBundle" type="collection">
+        <parameter key="path">/app/vendor/twig/extra-bundle</parameter>
+        <parameter key="namespace">Twig\Extra\TwigExtraBundle</parameter>
       </parameter>
     </parameter>
     <parameter key="kernel.charset">UTF-8</parameter>
@@ -62,6 +77,8 @@
     <parameter key="kernel.enabled_locales" type="collection"/>
     <parameter key="kernel.error_controller">error_controller</parameter>
     <parameter key="debug.file_link_format">%env(default::SYMFONY_IDE)%</parameter>
+    <parameter key="asset.request_context.base_path">null</parameter>
+    <parameter key="asset.request_context.secure">null</parameter>
     <parameter key="debug.error_handler.throw_at">-1</parameter>
     <parameter key="debug.container.dump">/app/var/cache/dev/App_KernelDevDebugContainer.xml</parameter>
     <parameter key="router.request_context.host">localhost</parameter>
@@ -156,6 +173,14 @@
     <parameter key="doctrine.orm.proxy_namespace">Proxies</parameter>
     <parameter key="doctrine.migrations.preferred_em">null</parameter>
     <parameter key="doctrine.migrations.preferred_connection">null</parameter>
+    <parameter key="nelmio_api_doc.areas" type="collection">
+      <parameter>default</parameter>
+    </parameter>
+    <parameter key="nelmio_api_doc.use_validation_groups">false</parameter>
+    <parameter key="twig.form.resources" type="collection">
+      <parameter>form_div_layout.html.twig</parameter>
+    </parameter>
+    <parameter key="twig.default_path">/app/templates</parameter>
     <parameter key="console.command.ids" type="collection"/>
   </parameters>
   <services>
@@ -167,6 +192,62 @@
     <service id="App\Entity" class="App\Entity" abstract="true">
       <tag name="container.excluded" source="in &quot;config/services.yaml&quot;"/>
     </service>
+    <service id="App\DTO" class="App\DTO" abstract="true">
+      <tag name="container.excluded" source="in &quot;config/services.yaml&quot;"/>
+    </service>
+    <service id="App\Enum" class="App\Enum" abstract="true">
+      <tag name="container.excluded" source="in &quot;config/services.yaml&quot;"/>
+    </service>
+    <service id="App\Controller\PaymentController" class="App\Controller\PaymentController" public="true" autowire="true" autoconfigure="true">
+      <tag name="controller.service_arguments"/>
+      <tag name="container.service_subscriber"/>
+      <argument type="service" id="serializer"/>
+      <argument type="service" id="validator"/>
+      <argument type="service" id="App\Service\PriceCalculatorService"/>
+      <argument type="service" id="App\Service\PaymentService"/>
+      <call method="setContainer">
+        <argument type="service" id=".service_locator.O2p6Lk7.App\Controller\PaymentController"/>
+      </call>
+    </service>
+    <service id="App\Repository\CouponRepository" class="App\Repository\CouponRepository" autowire="true" autoconfigure="true">
+      <tag name="doctrine.repository_service"/>
+      <argument type="service" id="doctrine"/>
+    </service>
+    <service id="App\Repository\ProductRepository" class="App\Repository\ProductRepository" autowire="true" autoconfigure="true">
+      <tag name="doctrine.repository_service"/>
+      <argument type="service" id="doctrine"/>
+    </service>
+    <service id="App\Repository\TaxRepository" class="App\Repository\TaxRepository" autowire="true" autoconfigure="true">
+      <tag name="doctrine.repository_service"/>
+      <argument type="service" id="doctrine"/>
+    </service>
+    <service id="App\Service\Payment\PaymentProcessorFactory" class="App\Service\Payment\PaymentProcessorFactory" autowire="true" autoconfigure="true">
+      <argument type="tagged_iterator" tag="app.payment_processor"/>
+    </service>
+    <service id="App\Service\Payment\PaypalPaymentAdapter" class="App\Service\Payment\PaypalPaymentAdapter" autowire="true" autoconfigure="true">
+      <tag name="app.payment_processor"/>
+      <argument type="service" id="Systemeio\TestForCandidates\PaymentProcessor\PaypalPaymentProcessor"/>
+    </service>
+    <service id="App\Service\Payment\StripePaymentAdapter" class="App\Service\Payment\StripePaymentAdapter" autowire="true" autoconfigure="true">
+      <tag name="app.payment_processor"/>
+      <argument type="service" id="Systemeio\TestForCandidates\PaymentProcessor\StripePaymentProcessor"/>
+    </service>
+    <service id="App\Service\PaymentService" class="App\Service\PaymentService" autowire="true" autoconfigure="true">
+      <argument type="service" id="App\Service\Payment\PaymentProcessorFactory"/>
+      <argument type="service" id="App\Service\PriceCalculatorService"/>
+    </service>
+    <service id="App\Service\PriceCalculatorService" class="App\Service\PriceCalculatorService" autowire="true" autoconfigure="true">
+      <argument type="service" id="App\Repository\ProductRepository"/>
+      <argument type="service" id="App\Repository\TaxRepository"/>
+      <argument type="service" id="App\Repository\CouponRepository"/>
+    </service>
+    <service id="App\Validator\ValidTaxNumber" class="App\Validator\ValidTaxNumber" autowire="true" autoconfigure="true"/>
+    <service id="App\Validator\ValidTaxNumberValidator" class="App\Validator\ValidTaxNumberValidator" autowire="true" autoconfigure="true">
+      <tag name="validator.constraint_validator"/>
+      <argument type="service" id="App\Repository\TaxRepository"/>
+    </service>
+    <service id="Systemeio\TestForCandidates\PaymentProcessor\PaypalPaymentProcessor" class="Systemeio\TestForCandidates\PaymentProcessor\PaypalPaymentProcessor" autowire="true" autoconfigure="true"/>
+    <service id="Systemeio\TestForCandidates\PaymentProcessor\StripePaymentProcessor" class="Systemeio\TestForCandidates\PaymentProcessor\StripePaymentProcessor" autowire="true" autoconfigure="true"/>
     <service id="argument_metadata_factory" class="Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadataFactory"/>
     <service id="argument_resolver.backed_enum_resolver" class="Symfony\Component\HttpKernel\Controller\ArgumentResolver\BackedEnumValueResolver">
       <tag priority="100" name="Symfony\Component\HttpKernel\Controller\ArgumentResolver\BackedEnumValueResolver">controller.argument_value_resolver</tag>
@@ -324,6 +405,7 @@
         <argument key="cache.validator_expression_language" type="service" id="cache.validator_expression_language" on-invalid="ignore_uninitialized"/>
         <argument key="doctrine" type="service" id="doctrine" on-invalid="ignore_uninitialized"/>
         <argument key="doctrine.debug_data_holder" type="service" id="doctrine.debug_data_holder" on-invalid="ignore_uninitialized"/>
+        <argument key="twig" type="service" id="twig" on-invalid="ignore_uninitialized"/>
       </argument>
       <argument type="collection">
         <argument key="request_stack" type="collection">
@@ -364,6 +446,9 @@
         </argument>
         <argument key="doctrine.debug_data_holder" type="collection">
           <argument>reset</argument>
+        </argument>
+        <argument key="twig" type="collection">
+          <argument>resetGlobals</argument>
         </argument>
       </argument>
     </service>
@@ -1022,6 +1107,51 @@
         <argument key="cache.doctrine.orm.default.query" type="service" id="cache.doctrine.orm.default.query" on-invalid="ignore_uninitialized"/>
       </argument>
     </service>
+    <service id="assets.packages" class="Symfony\Component\Asset\Packages">
+      <argument type="service" id="assets._default_package"/>
+      <argument type="tagged_iterator" tag="assets.package" index-by="package" default-index-method="getDefaultPackageName" default-priority-method="getDefaultPackagePriority"/>
+    </service>
+    <service id="assets.empty_package" class="Symfony\Component\Asset\Package">
+      <argument type="service" id="assets.empty_version_strategy"/>
+    </service>
+    <service id="assets.context" class="Symfony\Component\Asset\Context\RequestStackContext">
+      <argument type="service" id="request_stack"/>
+      <argument type="service">
+        <service class="string">
+          <factory service="router.request_context" method="getBaseUrl"/>
+        </service>
+      </argument>
+      <argument type="service">
+        <service class="bool">
+          <factory service="router.request_context" method="isSecure"/>
+        </service>
+      </argument>
+    </service>
+    <service id="assets.path_package" class="Symfony\Component\Asset\PathPackage" abstract="true">
+      <argument type="abstract">base path</argument>
+      <argument type="abstract">version strategy</argument>
+      <argument type="service" id="assets.context"/>
+    </service>
+    <service id="assets.url_package" class="Symfony\Component\Asset\UrlPackage" abstract="true">
+      <argument type="abstract">base URLs</argument>
+      <argument type="abstract">version strategy</argument>
+      <argument type="service" id="assets.context"/>
+    </service>
+    <service id="assets.static_version_strategy" class="Symfony\Component\Asset\VersionStrategy\StaticVersionStrategy" abstract="true">
+      <argument type="abstract">version</argument>
+      <argument type="abstract">format</argument>
+    </service>
+    <service id="assets.empty_version_strategy" class="Symfony\Component\Asset\VersionStrategy\EmptyVersionStrategy"/>
+    <service id="assets.json_manifest_version_strategy" class="Symfony\Component\Asset\VersionStrategy\JsonManifestVersionStrategy" abstract="true">
+      <argument type="abstract">manifest path</argument>
+      <argument type="service" id="http_client" on-invalid="null"/>
+      <argument>false</argument>
+    </service>
+    <service id="assets._default_package" class="Symfony\Component\Asset\PathPackage">
+      <argument></argument>
+      <argument type="service" id="assets.empty_version_strategy"/>
+      <argument type="service" id="assets.context"/>
+    </service>
     <service id="debug.error_handler_configurator" class="Symfony\Component\HttpKernel\Debug\ErrorHandlerConfigurator" public="true">
       <tag name="monolog.logger" channel="php"/>
       <argument type="service" id="logger" on-invalid="null"/>
@@ -1278,6 +1408,14 @@
         </argument>
         <argument>0</argument>
       </call>
+      <call method="addListener">
+        <argument>kernel.view</argument>
+        <argument type="collection">
+          <argument type="service_closure" id="controller.template_attribute_listener"/>
+          <argument>onKernelView</argument>
+        </argument>
+        <argument>-128</argument>
+      </call>
     </service>
     <service id="debug.controller_resolver" class="Symfony\Component\HttpKernel\Controller\TraceableControllerResolver">
       <tag name="monolog.logger" channel="request"/>
@@ -1442,7 +1580,7 @@
       </argument>
     </service>
     <service id="Symfony\Bundle\FrameworkBundle\Controller\TemplateController" class="Symfony\Bundle\FrameworkBundle\Controller\TemplateController" public="true">
-      <argument>null</argument>
+      <argument type="service" id="twig" on-invalid="ignore"/>
     </service>
     <service id="property_accessor" class="Symfony\Component\PropertyAccess\PropertyAccessor">
       <argument>3</argument>
@@ -1610,7 +1748,7 @@
           <factory class="Symfony\Component\ErrorHandler\ErrorRenderer\SerializerErrorRenderer" method="getPreferredFormat"/>
         </service>
       </argument>
-      <argument type="service" id="error_handler.error_renderer.html"/>
+      <argument type="service" id="twig.error_renderer.html"/>
       <argument type="service">
         <service>
           <argument type="service" id="request_stack"/>
@@ -1630,9 +1768,13 @@
       </argument>
       <argument type="iterator">
         <argument type="service" id="doctrine.orm.default_entity_manager.property_info_extractor"/>
+        <argument type="service" id="property_info.phpstan_extractor"/>
+        <argument type="service" id="property_info.php_doc_extractor"/>
         <argument type="service" id="property_info.reflection_extractor"/>
       </argument>
-      <argument type="iterator"/>
+      <argument type="iterator">
+        <argument type="service" id="property_info.php_doc_extractor"/>
+      </argument>
       <argument type="iterator">
         <argument type="service" id="doctrine.orm.default_entity_manager.property_info_extractor"/>
         <argument type="service" id="property_info.reflection_extractor"/>
@@ -1646,6 +1788,13 @@
       <tag name="property_info.type_extractor" priority="-1002"/>
       <tag name="property_info.access_extractor" priority="-1000"/>
       <tag name="property_info.initializable_extractor" priority="-1000"/>
+    </service>
+    <service id="property_info.phpstan_extractor" class="Symfony\Component\PropertyInfo\Extractor\PhpStanExtractor">
+      <tag name="property_info.type_extractor" priority="-1000"/>
+    </service>
+    <service id="property_info.php_doc_extractor" class="Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor">
+      <tag name="property_info.description_extractor" priority="-1000"/>
+      <tag name="property_info.type_extractor" priority="-1001"/>
     </service>
     <service id=".cache_connection.GD_MSZC" class="Symfony\Component\Cache\Adapter\AbstractAdapter" constructor="createConnection">
       <argument>redis://localhost</argument>
@@ -1771,7 +1920,7 @@
       <argument type="service" id="cache.validator"/>
     </service>
     <service id="validator.validator_factory" class="Symfony\Component\Validator\ContainerConstraintValidatorFactory">
-      <argument type="service" id=".service_locator.nrgc8tJ"/>
+      <argument type="service" id=".service_locator.iysUnCu"/>
     </service>
     <service id="Symfony\Component\Validator\Constraints\ExpressionLanguageSyntaxValidator" class="Symfony\Component\Validator\Constraints\ExpressionLanguageSyntaxValidator" abstract="true">
       <tag name="container.excluded" source="in &quot;config/validator.php&quot;"/>
@@ -2243,7 +2392,7 @@
     <service id="doctrine.orm.configuration" class="Doctrine\ORM\Configuration" abstract="true"/>
     <service id="doctrine.orm.entity_manager.abstract" class="Doctrine\ORM\EntityManager" lazy="true" abstract="true"/>
     <service id="doctrine.orm.container_repository_factory" class="Doctrine\Bundle\DoctrineBundle\Repository\ContainerRepositoryFactory">
-      <argument type="service" id=".service_locator.Xbsa8iG"/>
+      <argument type="service" id=".service_locator.kgJKdt5"/>
     </service>
     <service id="doctrine.orm.manager_configurator.abstract" class="Doctrine\Bundle\DoctrineBundle\ManagerConfigurator" abstract="true">
       <argument type="collection"/>
@@ -2731,7 +2880,7 @@
       <argument type="service" id="maker.autoloader_util"/>
       <argument type="service" id="maker.file_link_formatter"/>
       <argument>/app</argument>
-      <argument>null</argument>
+      <argument>/app/templates</argument>
     </service>
     <service id="maker.autoloader_finder" class="Symfony\Bundle\MakerBundle\Util\ComposerAutoloaderFinder">
       <argument>App</argument>
@@ -2930,6 +3079,733 @@
       <argument type="service" id="maker.file_manager"/>
       <argument type="service" id="maker.generator"/>
     </service>
+    <service id="nelmio_api_doc.command.dump" class="Nelmio\ApiDocBundle\Command\DumpCommand" public="true">
+      <tag name="console.command"/>
+      <tag name="container.no_preload"/>
+      <argument type="service" id="nelmio_api_doc.render_docs"/>
+      <call method="setName">
+        <argument>nelmio:apidoc:dump</argument>
+      </call>
+    </service>
+    <service id="nelmio_api_doc.controller.swagger_ui" class="Nelmio\ApiDocBundle\Controller\SwaggerUiController" public="true">
+      <argument type="service" id="nelmio_api_doc.render_docs"/>
+      <argument>swaggerui</argument>
+    </service>
+    <service id="nelmio_api_doc.controller.redocly" class="Nelmio\ApiDocBundle\Controller\SwaggerUiController" public="true">
+      <argument type="service" id="nelmio_api_doc.render_docs"/>
+      <argument>redocly</argument>
+    </service>
+    <service id="nelmio_api_doc.controller.stoplight" class="Nelmio\ApiDocBundle\Controller\SwaggerUiController" public="true">
+      <argument type="service" id="nelmio_api_doc.render_docs"/>
+      <argument>stoplight</argument>
+    </service>
+    <service id="nelmio_api_doc.controller.swagger_json" class="Nelmio\ApiDocBundle\Controller\DocumentationController" public="true">
+      <argument type="service" id="nelmio_api_doc.render_docs"/>
+    </service>
+    <service id="nelmio_api_doc.controller.swagger_yaml" class="Nelmio\ApiDocBundle\Controller\YamlDocumentationController" public="true">
+      <argument type="service" id="nelmio_api_doc.render_docs"/>
+    </service>
+    <service id="nelmio_api_doc.render_docs" class="Nelmio\ApiDocBundle\Render\RenderOpenApi" public="true">
+      <argument type="service" id="nelmio_api_doc.generator_locator"/>
+      <argument type="service" id="nelmio_api_doc.render_docs.json"/>
+      <argument type="service" id="nelmio_api_doc.render_docs.yaml"/>
+      <argument type="service" id="nelmio_api_doc.render_docs.html" on-invalid="ignore"/>
+    </service>
+    <service id="nelmio_api_doc.render_docs.html" class="Nelmio\ApiDocBundle\Render\Html\HtmlOpenApiRenderer">
+      <argument type="service" id="twig"/>
+      <argument type="collection">
+        <argument key="assets_mode">cdn</argument>
+        <argument key="swagger_ui_config" type="collection"/>
+        <argument key="redocly_config" type="collection"/>
+        <argument key="stoplight_config" type="collection"/>
+      </argument>
+    </service>
+    <service id="nelmio_api_doc.render_docs.html.asset" class="Nelmio\ApiDocBundle\Render\Html\GetNelmioAsset">
+      <tag name="twig.extension"/>
+      <argument type="service" id="twig.extension.assets"/>
+    </service>
+    <service id="nelmio_api_doc.render_docs.json" class="Nelmio\ApiDocBundle\Render\Json\JsonOpenApiRenderer"/>
+    <service id="nelmio_api_doc.render_docs.yaml" class="Nelmio\ApiDocBundle\Render\Yaml\YamlOpenApiRenderer"/>
+    <service id="nelmio_api_doc.controller_reflector" class="Nelmio\ApiDocBundle\Util\ControllerReflector">
+      <argument type="service" id="service_container"/>
+    </service>
+    <service id="nelmio_api_doc.describers.config" class="Nelmio\ApiDocBundle\Describer\ExternalDocDescriber">
+      <tag name="nelmio_api_doc.describer" priority="1000"/>
+      <tag name="nelmio_api_doc.describer.default" priority="1000"/>
+      <argument type="collection">
+        <argument key="info" type="collection">
+          <argument key="title">Payment API</argument>
+          <argument key="description">REST API для расчета цены продукта и проведения оплаты</argument>
+          <argument key="version">1.0.0</argument>
+        </argument>
+        <argument key="paths" type="collection">
+          <argument key="/calculate-price" type="collection">
+            <argument key="post" type="collection">
+              <argument key="tags" type="collection">
+                <argument>Payment</argument>
+              </argument>
+              <argument key="summary">Расчет цены продукта</argument>
+              <argument key="description">Рассчитывает итоговую цену с учетом налога и купона</argument>
+              <argument key="requestBody" type="collection">
+                <argument key="required">true</argument>
+                <argument key="content" type="collection">
+                  <argument key="application/json" type="collection">
+                    <argument key="schema" type="collection">
+                      <argument key="type">object</argument>
+                      <argument key="required" type="collection">
+                        <argument>product</argument>
+                        <argument>taxNumber</argument>
+                      </argument>
+                      <argument key="properties" type="collection">
+                        <argument key="product" type="collection">
+                          <argument key="type">integer</argument>
+                          <argument key="example">1</argument>
+                          <argument key="description">ID продукта</argument>
+                        </argument>
+                        <argument key="taxNumber" type="collection">
+                          <argument key="type">string</argument>
+                          <argument key="example">DE123456789</argument>
+                          <argument key="description">Налоговый номер (DE/IT/FR/GR)</argument>
+                        </argument>
+                        <argument key="couponCode" type="collection">
+                          <argument key="type">string</argument>
+                          <argument key="example">D15</argument>
+                          <argument key="description">Код купона (опционально)</argument>
+                        </argument>
+                      </argument>
+                    </argument>
+                  </argument>
+                </argument>
+              </argument>
+              <argument key="responses" type="collection">
+                <argument key="200" type="collection">
+                  <argument key="description">Успешный расчет цены</argument>
+                  <argument key="content" type="collection">
+                    <argument key="application/json" type="collection">
+                      <argument key="schema" type="collection">
+                        <argument key="type">object</argument>
+                        <argument key="properties" type="collection">
+                          <argument key="price" type="collection">
+                            <argument key="type">number</argument>
+                            <argument key="format">float</argument>
+                            <argument key="example">116.56</argument>
+                          </argument>
+                        </argument>
+                      </argument>
+                    </argument>
+                  </argument>
+                </argument>
+                <argument key="400" type="collection">
+                  <argument key="description">Неверные данные</argument>
+                </argument>
+                <argument key="422" type="collection">
+                  <argument key="description">Ошибка валидации</argument>
+                </argument>
+              </argument>
+            </argument>
+          </argument>
+          <argument key="/purchase" type="collection">
+            <argument key="post" type="collection">
+              <argument key="tags" type="collection">
+                <argument>Payment</argument>
+              </argument>
+              <argument key="summary">Проведение покупки</argument>
+              <argument key="description">Рассчитывает цену и проводит платеж</argument>
+              <argument key="requestBody" type="collection">
+                <argument key="required">true</argument>
+                <argument key="content" type="collection">
+                  <argument key="application/json" type="collection">
+                    <argument key="schema" type="collection">
+                      <argument key="type">object</argument>
+                      <argument key="required" type="collection">
+                        <argument>product</argument>
+                        <argument>taxNumber</argument>
+                        <argument>paymentProcessor</argument>
+                      </argument>
+                      <argument key="properties" type="collection">
+                        <argument key="product" type="collection">
+                          <argument key="type">integer</argument>
+                          <argument key="example">1</argument>
+                        </argument>
+                        <argument key="taxNumber" type="collection">
+                          <argument key="type">string</argument>
+                          <argument key="example">IT12345678900</argument>
+                        </argument>
+                        <argument key="couponCode" type="collection">
+                          <argument key="type">string</argument>
+                          <argument key="example">D15</argument>
+                        </argument>
+                        <argument key="paymentProcessor" type="collection">
+                          <argument key="type">string</argument>
+                          <argument key="enum" type="collection">
+                            <argument>paypal</argument>
+                            <argument>stripe</argument>
+                          </argument>
+                          <argument key="example">paypal</argument>
+                        </argument>
+                      </argument>
+                    </argument>
+                  </argument>
+                </argument>
+              </argument>
+              <argument key="responses" type="collection">
+                <argument key="200" type="collection">
+                  <argument key="description">Платеж успешно проведен</argument>
+                  <argument key="content" type="collection">
+                    <argument key="application/json" type="collection">
+                      <argument key="schema" type="collection">
+                        <argument key="type">object</argument>
+                        <argument key="properties" type="collection">
+                          <argument key="success" type="collection">
+                            <argument key="type">boolean</argument>
+                            <argument key="example">true</argument>
+                          </argument>
+                          <argument key="price" type="collection">
+                            <argument key="type">number</argument>
+                            <argument key="format">float</argument>
+                            <argument key="example">116.56</argument>
+                          </argument>
+                          <argument key="message" type="collection">
+                            <argument key="type">string</argument>
+                            <argument key="example">Payment processed successfully</argument>
+                          </argument>
+                        </argument>
+                      </argument>
+                    </argument>
+                  </argument>
+                </argument>
+                <argument key="400" type="collection">
+                  <argument key="description">Ошибка платежа</argument>
+                </argument>
+                <argument key="422" type="collection">
+                  <argument key="description">Ошибка валидации</argument>
+                </argument>
+              </argument>
+            </argument>
+          </argument>
+        </argument>
+      </argument>
+    </service>
+    <service id="nelmio_api_doc.describers.default" class="Nelmio\ApiDocBundle\Describer\DefaultDescriber">
+      <tag name="nelmio_api_doc.describer" priority="-1000"/>
+      <tag name="nelmio_api_doc.describer.default" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.route_describers.route_metadata" class="Nelmio\ApiDocBundle\RouteDescriber\RouteMetadataDescriber">
+      <tag name="nelmio_api_doc.route_describer" priority="-300"/>
+    </service>
+    <service id="nelmio_api_doc.model_describers.self_describing" class="Nelmio\ApiDocBundle\ModelDescriber\SelfDescribingModelDescriber">
+      <tag name="nelmio_api_doc.model_describer" priority="1000"/>
+    </service>
+    <service id="nelmio_api_doc.model_describers.object" class="Nelmio\ApiDocBundle\ModelDescriber\ObjectModelDescriber">
+      <tag name="nelmio_api_doc.model_describer"/>
+      <argument type="service" id="property_info"/>
+      <argument type="service" id="nelmio_api_doc.object_model.property_describer"/>
+      <argument type="collection">
+        <argument>json</argument>
+      </argument>
+      <argument type="service" id="serializer.name_converter.metadata_aware" on-invalid="ignore"/>
+      <argument>false</argument>
+      <argument type="service" id="serializer.mapping.class_metadata_factory" on-invalid="ignore"/>
+    </service>
+    <service id="nelmio_api_doc.model_describers.enum" class="Nelmio\ApiDocBundle\ModelDescriber\EnumModelDescriber">
+      <tag name="nelmio_api_doc.model_describer" priority="100"/>
+    </service>
+    <service id="nelmio_api_doc.object_model.property_describer" class="Nelmio\ApiDocBundle\PropertyDescriber\PropertyDescriber">
+      <tag name="nelmio_api_doc.object_model.property_describer" priority="100"/>
+      <argument type="tagged_iterator" tag="nelmio_api_doc.object_model.property_describer"/>
+    </service>
+    <service id="nelmio_api_doc.object_model.property_describers.array" class="Nelmio\ApiDocBundle\PropertyDescriber\ArrayPropertyDescriber">
+      <tag name="nelmio_api_doc.object_model.property_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.object_model.property_describers.dictionary" class="Nelmio\ApiDocBundle\PropertyDescriber\DictionaryPropertyDescriber">
+      <tag name="nelmio_api_doc.object_model.property_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.object_model.property_describers.boolean" class="Nelmio\ApiDocBundle\PropertyDescriber\BooleanPropertyDescriber">
+      <tag name="nelmio_api_doc.object_model.property_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.object_model.property_describers.float" class="Nelmio\ApiDocBundle\PropertyDescriber\FloatPropertyDescriber">
+      <tag name="nelmio_api_doc.object_model.property_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.object_model.property_describers.integer" class="Nelmio\ApiDocBundle\PropertyDescriber\IntegerPropertyDescriber">
+      <tag name="nelmio_api_doc.object_model.property_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.object_model.property_describers.string" class="Nelmio\ApiDocBundle\PropertyDescriber\StringPropertyDescriber">
+      <tag name="nelmio_api_doc.object_model.property_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.object_model.property_describers.date_time" class="Nelmio\ApiDocBundle\PropertyDescriber\DateTimePropertyDescriber">
+      <tag name="nelmio_api_doc.object_model.property_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.object_model.property_describers.nullable" class="Nelmio\ApiDocBundle\PropertyDescriber\NullablePropertyDescriber">
+      <tag name="nelmio_api_doc.object_model.property_describer"/>
+    </service>
+    <service id="nelmio_api_doc.object_model.property_describers.object" class="Nelmio\ApiDocBundle\PropertyDescriber\ObjectPropertyDescriber">
+      <tag name="nelmio_api_doc.object_model.property_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.object_model.property_describers.compound" class="Nelmio\ApiDocBundle\PropertyDescriber\CompoundPropertyDescriber">
+      <tag name="nelmio_api_doc.object_model.property_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.object_model.property_describers.uuid" class="Nelmio\ApiDocBundle\PropertyDescriber\UuidPropertyDescriber">
+      <tag name="nelmio_api_doc.object_model.property_describer"/>
+    </service>
+    <service id="nelmio_api_doc.object_model.property_describers.translatable" class="Nelmio\ApiDocBundle\PropertyDescriber\TranslatablePropertyDescriber">
+      <tag name="nelmio_api_doc.object_model.property_describer"/>
+    </service>
+    <service id="nelmio_api_doc.form.documentation_extension" class="Nelmio\ApiDocBundle\Form\Extension\DocumentationExtension">
+      <tag name="form.type_extension" extended_type="Symfony\Component\Form\Extension\Core\Type\FormType"/>
+    </service>
+    <service id="nelmio_api_doc.swagger.processor.nullable_property" class="Nelmio\ApiDocBundle\Processor\NullablePropertyProcessor">
+      <tag name="nelmio_api_doc.swagger.processor"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.chain" class="Nelmio\ApiDocBundle\TypeDescriber\ChainDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="1000"/>
+      <argument type="tagged_iterator" tag="nelmio_api_doc.type_describer"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.array" class="Nelmio\ApiDocBundle\TypeDescriber\ArrayDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.bool" class="Nelmio\ApiDocBundle\TypeDescriber\BoolDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.class" class="Nelmio\ApiDocBundle\TypeDescriber\ClassDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.dictionary" class="Nelmio\ApiDocBundle\TypeDescriber\DictionaryDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.float" class="Nelmio\ApiDocBundle\TypeDescriber\FloatDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.generic_class" class="Nelmio\ApiDocBundle\TypeDescriber\GenericClassDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.generic_collection" class="Nelmio\ApiDocBundle\TypeDescriber\GenericCollectionDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.integer" class="Nelmio\ApiDocBundle\TypeDescriber\IntegerDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.intersection" class="Nelmio\ApiDocBundle\TypeDescriber\IntersectionDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.list" class="Nelmio\ApiDocBundle\TypeDescriber\ListDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.mixed" class="Nelmio\ApiDocBundle\TypeDescriber\MixedDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.nullable" class="Nelmio\ApiDocBundle\TypeDescriber\NullableDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="-950"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.object" class="Nelmio\ApiDocBundle\TypeDescriber\ObjectDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.string" class="Nelmio\ApiDocBundle\TypeDescriber\StringDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.template" class="Nelmio\ApiDocBundle\TypeDescriber\TemplateDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="-1000"/>
+      <argument type="service" id="nelmio_api_doc.type_describer.chain"/>
+    </service>
+    <service id="nelmio_api_doc.type_describer.union" class="Nelmio\ApiDocBundle\TypeDescriber\UnionDescriber">
+      <tag name="nelmio_api_doc.type_describer" priority="-1000"/>
+    </service>
+    <service id="nelmio_api_doc.open_api.generator" class="Nelmio\ApiDocBundle\OpenApiGenerator">
+      <call method="addNelmioProcessor">
+        <argument type="service" id="nelmio_api_doc.swagger.processor.nullable_property"/>
+        <argument>null</argument>
+      </call>
+      <call method="addNelmioProcessor">
+        <argument type="service" id="nelmio_api_doc.swagger.processor.map_query_string"/>
+        <argument>null</argument>
+      </call>
+      <call method="addNelmioProcessor">
+        <argument type="service" id="nelmio_api_doc.swagger.processor.map_request_payload"/>
+        <argument>null</argument>
+      </call>
+    </service>
+    <service id="nelmio_api_doc.generator.default" class="Nelmio\ApiDocBundle\ApiDocGenerator" public="true">
+      <tag name="monolog.logger" channel="nelmio_api_doc"/>
+      <argument type="tagged_iterator" tag="nelmio_api_doc.describer.default"/>
+      <argument type="tagged_iterator" tag="nelmio_api_doc.model_describer"/>
+      <argument>null</argument>
+      <argument>openapi_doc.default</argument>
+      <argument type="service" id="nelmio_api_doc.open_api.generator"/>
+      <call method="setAlternativeNames">
+        <argument type="collection"/>
+      </call>
+      <call method="setMediaTypes">
+        <argument type="collection">
+          <argument>json</argument>
+        </argument>
+      </call>
+      <call method="setLogger">
+        <argument type="service" id="logger"/>
+      </call>
+      <call method="setOpenApiVersion">
+        <argument>null</argument>
+      </call>
+    </service>
+    <service id="nelmio_api_doc.describers.route.default" class="Nelmio\ApiDocBundle\Describer\RouteDescriber">
+      <tag name="nelmio_api_doc.describer.default" priority="-400"/>
+      <argument type="service" id="nelmio_api_doc.routes.default"/>
+      <argument type="service" id="nelmio_api_doc.controller_reflector"/>
+      <argument type="tagged_iterator" tag="nelmio_api_doc.route_describer"/>
+    </service>
+    <service id="nelmio_api_doc.describers.openapi_php.default" class="Nelmio\ApiDocBundle\Describer\OpenApiPhpDescriber">
+      <tag name="nelmio_api_doc.describer.default" priority="-200"/>
+      <argument type="service" id="nelmio_api_doc.routes.default"/>
+      <argument type="service" id="nelmio_api_doc.controller_reflector"/>
+      <argument type="constant">Nelmio\ApiDocBundle\Describer\OperationIdGeneration::ALWAYS_PREPEND</argument>
+    </service>
+    <service id="nelmio_api_doc.describers.security.default" class="Nelmio\ApiDocBundle\Describer\SecurityDescriber">
+      <tag name="nelmio_api_doc.describer.default" priority="-200"/>
+      <argument type="collection"/>
+      <argument type="service" id="nelmio_api_doc.routes.default"/>
+      <argument type="service" id="nelmio_api_doc.controller_reflector"/>
+    </service>
+    <service id="nelmio_api_doc.describers.config.default" class="Nelmio\ApiDocBundle\Describer\ExternalDocDescriber">
+      <tag name="nelmio_api_doc.describer.default" priority="990"/>
+      <argument type="collection"/>
+      <argument>true</argument>
+    </service>
+    <service id="nelmio_api_doc.routes.default" class="Symfony\Component\Routing\RouteCollection">
+      <argument type="service">
+        <service class="Symfony\Component\Routing\RouteCollection">
+          <factory service="router.default" method="getRouteCollection"/>
+        </service>
+      </argument>
+      <factory method="filter">
+        <service class="Nelmio\ApiDocBundle\Routing\FilteredRouteCollectionBuilder">
+          <argument type="service" id="nelmio_api_doc.controller_reflector"/>
+          <argument>default</argument>
+          <argument type="collection">
+            <argument key="path_patterns" type="collection">
+              <argument>^/(?!_)</argument>
+            </argument>
+            <argument key="host_patterns" type="collection"/>
+            <argument key="name_patterns" type="collection"/>
+            <argument key="security" type="collection"/>
+            <argument key="with_attribute">false</argument>
+            <argument key="disable_default_routes">false</argument>
+          </argument>
+        </service>
+      </factory>
+    </service>
+    <service id="nelmio_api_doc.generator_locator" class="Symfony\Component\DependencyInjection\ServiceLocator">
+      <tag name="container.service_locator"/>
+      <argument type="collection">
+        <argument key="default" type="service_closure" id="nelmio_api_doc.generator.default"/>
+      </argument>
+    </service>
+    <service id="nelmio_api_doc.route_describers.php_doc" class="Nelmio\ApiDocBundle\RouteDescriber\PhpDocDescriber">
+      <tag name="nelmio_api_doc.route_describer" priority="-275"/>
+    </service>
+    <service id="nelmio_api_doc.route_describers.route_argument" class="Nelmio\ApiDocBundle\RouteDescriber\RouteArgumentDescriber">
+      <tag name="nelmio_api_doc.route_describer" priority="-225"/>
+      <argument type="service" id="argument_metadata_factory"/>
+      <argument type="tagged_iterator" tag="nelmio_api_doc.route_argument_describer"/>
+    </service>
+    <service id="nelmio_api_doc.route_argument_describer.map_query_string" class="Nelmio\ApiDocBundle\RouteDescriber\RouteArgumentDescriber\SymfonyMapQueryStringDescriber">
+      <tag name="nelmio_api_doc.route_argument_describer" priority="0"/>
+    </service>
+    <service id="nelmio_api_doc.swagger.processor.map_query_string" class="Nelmio\ApiDocBundle\Processor\MapQueryStringProcessor">
+      <tag name="nelmio_api_doc.swagger.processor" priority="0"/>
+    </service>
+    <service id="nelmio_api_doc.route_argument_describer.map_request_payload" class="Nelmio\ApiDocBundle\RouteDescriber\RouteArgumentDescriber\SymfonyMapRequestPayloadDescriber">
+      <tag name="nelmio_api_doc.route_argument_describer" priority="0"/>
+    </service>
+    <service id="nelmio_api_doc.swagger.processor.map_request_payload" class="Nelmio\ApiDocBundle\Processor\MapRequestPayloadProcessor">
+      <tag name="nelmio_api_doc.swagger.processor" priority="0"/>
+    </service>
+    <service id="nelmio_api_doc.route_argument_describer.map_query_parameter" class="Nelmio\ApiDocBundle\RouteDescriber\RouteArgumentDescriber\SymfonyMapQueryParameterDescriber">
+      <tag name="nelmio_api_doc.route_argument_describer" priority="0"/>
+    </service>
+    <service id="twig" class="Twig\Environment">
+      <tag name="container.preload" class="Twig\Cache\FilesystemCache"/>
+      <tag name="container.preload" class="Twig\Extension\CoreExtension"/>
+      <tag name="container.preload" class="Twig\Extension\EscaperExtension"/>
+      <tag name="container.preload" class="Twig\Extension\OptimizerExtension"/>
+      <tag name="container.preload" class="Twig\Extension\StagingExtension"/>
+      <tag name="container.preload" class="Twig\ExpressionParser\Infix\BinaryOperatorExpressionParser"/>
+      <tag name="container.preload" class="Twig\ExtensionSet"/>
+      <tag name="container.preload" class="Twig\Template"/>
+      <tag name="container.preload" class="Twig\TemplateWrapper"/>
+      <tag name="kernel.reset" method="resetGlobals"/>
+      <argument type="service" id="twig.loader.native_filesystem"/>
+      <argument type="collection">
+        <argument key="autoescape">name</argument>
+        <argument key="cache">/app/var/cache/dev/twig</argument>
+        <argument key="charset">UTF-8</argument>
+        <argument key="debug">true</argument>
+        <argument key="strict_variables">true</argument>
+      </argument>
+      <call method="addExtension">
+        <argument type="service" id="twig.extension.profiler"/>
+      </call>
+      <call method="addExtension">
+        <argument type="service" id="twig.extension.trans"/>
+      </call>
+      <call method="addExtension">
+        <argument type="service" id="twig.extension.assets"/>
+      </call>
+      <call method="addExtension">
+        <argument type="service" id="twig.extension.code"/>
+      </call>
+      <call method="addExtension">
+        <argument type="service" id="twig.extension.routing"/>
+      </call>
+      <call method="addExtension">
+        <argument type="service" id="twig.extension.yaml"/>
+      </call>
+      <call method="addExtension">
+        <argument type="service" id="twig.extension.debug.stopwatch"/>
+      </call>
+      <call method="addExtension">
+        <argument type="service" id="twig.extension.httpkernel"/>
+      </call>
+      <call method="addExtension">
+        <argument type="service" id="twig.extension.httpfoundation"/>
+      </call>
+      <call method="addExtension">
+        <argument type="service" id="twig.extension.serializer"/>
+      </call>
+      <call method="addExtension">
+        <argument type="service" id="doctrine.twig.doctrine_extension"/>
+      </call>
+      <call method="addExtension">
+        <argument type="service" id="nelmio_api_doc.render_docs.html.asset"/>
+      </call>
+      <call method="addExtension">
+        <argument type="service" id="twig.extension.debug"/>
+      </call>
+      <call method="addGlobal">
+        <argument>app</argument>
+        <argument type="service" id="twig.app_variable"/>
+      </call>
+      <call method="addRuntimeLoader">
+        <argument type="service" id="twig.runtime_loader"/>
+      </call>
+      <call method="registerUndefinedFilterCallback">
+        <argument type="collection">
+          <argument type="service" id="twig.missing_extension_suggestor"/>
+          <argument>suggestFilter</argument>
+        </argument>
+      </call>
+      <call method="registerUndefinedFunctionCallback">
+        <argument type="collection">
+          <argument type="service" id="twig.missing_extension_suggestor"/>
+          <argument>suggestFunction</argument>
+        </argument>
+      </call>
+      <call method="registerUndefinedTokenParserCallback">
+        <argument type="collection">
+          <argument type="service" id="twig.missing_extension_suggestor"/>
+          <argument>suggestTag</argument>
+        </argument>
+      </call>
+      <configurator service="twig.configurator.environment" method="configure"/>
+    </service>
+    <service id="twig.app_variable" class="Symfony\Bridge\Twig\AppVariable">
+      <call method="setEnvironment">
+        <argument>dev</argument>
+      </call>
+      <call method="setDebug">
+        <argument>true</argument>
+      </call>
+      <call method="setRequestStack">
+        <argument type="service" id="request_stack" on-invalid="ignore"/>
+      </call>
+      <call method="setEnabledLocales">
+        <argument type="collection"/>
+      </call>
+    </service>
+    <service id="twig.template_iterator" class="Symfony\Bundle\TwigBundle\TemplateIterator">
+      <argument type="service" id="kernel"/>
+      <argument type="collection"/>
+      <argument>/app/templates</argument>
+      <argument type="collection">
+        <argument>*.twig</argument>
+      </argument>
+    </service>
+    <service id="twig.template_cache_warmer" class="Symfony\Bundle\TwigBundle\CacheWarmer\TemplateCacheWarmer">
+      <tag name="kernel.cache_warmer"/>
+      <tag name="container.service_subscriber" id="twig"/>
+      <argument type="service" id=".service_locator.etVElvN.twig.template_cache_warmer"/>
+      <argument type="service" id="twig.template_iterator"/>
+    </service>
+    <service id="twig.loader.native_filesystem" class="Twig\Loader\FilesystemLoader">
+      <tag name="twig.loader"/>
+      <argument type="collection"/>
+      <argument>/app</argument>
+      <call method="addPath">
+        <argument>/app/vendor/doctrine/doctrine-bundle/templates</argument>
+        <argument>Doctrine</argument>
+      </call>
+      <call method="addPath">
+        <argument>/app/vendor/doctrine/doctrine-bundle/templates</argument>
+        <argument>!Doctrine</argument>
+      </call>
+      <call method="addPath">
+        <argument>/app/vendor/doctrine/doctrine-migrations-bundle/templates</argument>
+        <argument>DoctrineMigrations</argument>
+      </call>
+      <call method="addPath">
+        <argument>/app/vendor/doctrine/doctrine-migrations-bundle/templates</argument>
+        <argument>!DoctrineMigrations</argument>
+      </call>
+      <call method="addPath">
+        <argument>/app/vendor/symfony/maker-bundle/templates</argument>
+        <argument>Maker</argument>
+      </call>
+      <call method="addPath">
+        <argument>/app/vendor/symfony/maker-bundle/templates</argument>
+        <argument>!Maker</argument>
+      </call>
+      <call method="addPath">
+        <argument>/app/vendor/nelmio/api-doc-bundle/templates</argument>
+        <argument>NelmioApiDoc</argument>
+      </call>
+      <call method="addPath">
+        <argument>/app/vendor/nelmio/api-doc-bundle/templates</argument>
+        <argument>!NelmioApiDoc</argument>
+      </call>
+      <call method="addPath">
+        <argument>/app/templates</argument>
+      </call>
+    </service>
+    <service id="twig.loader.chain" class="Twig\Loader\ChainLoader"/>
+    <service id="twig.extension.profiler" class="Symfony\Bridge\Twig\Extension\ProfilerExtension">
+      <tag name="twig.extension"/>
+      <argument type="service" id="twig.profile"/>
+      <argument type="service" id="debug.stopwatch" on-invalid="ignore"/>
+    </service>
+    <service id="twig.profile" class="Twig\Profiler\Profile"/>
+    <service id="data_collector.twig" class="Symfony\Bridge\Twig\DataCollector\TwigDataCollector">
+      <tag name="data_collector" template="@WebProfiler/Collector/twig.html.twig" id="twig" priority="257"/>
+      <argument type="service" id="twig.profile"/>
+      <argument type="service" id="twig"/>
+    </service>
+    <service id="twig.extension.trans" class="Symfony\Bridge\Twig\Extension\TranslationExtension">
+      <tag name="twig.extension"/>
+      <argument>null</argument>
+    </service>
+    <service id="twig.extension.assets" class="Symfony\Bridge\Twig\Extension\AssetExtension">
+      <tag name="twig.extension"/>
+      <argument type="service" id="assets.packages"/>
+    </service>
+    <service id="twig.extension.code" class="Symfony\Bridge\Twig\Extension\CodeExtension">
+      <tag name="twig.extension"/>
+      <argument type="service" id="debug.file_link_formatter" on-invalid="ignore"/>
+      <argument>/app</argument>
+      <argument>UTF-8</argument>
+    </service>
+    <service id="twig.extension.routing" class="Symfony\Bridge\Twig\Extension\RoutingExtension">
+      <tag name="twig.extension"/>
+      <argument type="service" id="router.default"/>
+    </service>
+    <service id="twig.extension.yaml" class="Symfony\Bridge\Twig\Extension\YamlExtension">
+      <tag name="twig.extension"/>
+    </service>
+    <service id="twig.extension.debug.stopwatch" class="Symfony\Bridge\Twig\Extension\StopwatchExtension">
+      <tag name="twig.extension"/>
+      <argument type="service" id="debug.stopwatch" on-invalid="ignore"/>
+      <argument>true</argument>
+    </service>
+    <service id="twig.extension.htmlsanitizer" class="Symfony\Bridge\Twig\Extension\HtmlSanitizerExtension">
+      <argument type="service" id=".service_locator.Xbsa8iG"/>
+    </service>
+    <service id="twig.extension.httpkernel" class="Symfony\Bridge\Twig\Extension\HttpKernelExtension">
+      <tag name="twig.extension"/>
+    </service>
+    <service id="twig.runtime.httpkernel" class="Symfony\Bridge\Twig\Extension\HttpKernelRuntime">
+      <tag name="twig.runtime"/>
+      <argument type="service" id="fragment.handler"/>
+      <argument type="service" id="fragment.uri_generator" on-invalid="ignore"/>
+    </service>
+    <service id="twig.extension.httpfoundation" class="Symfony\Bridge\Twig\Extension\HttpFoundationExtension">
+      <tag name="twig.extension"/>
+      <argument type="service" id="url_helper"/>
+    </service>
+    <service id="twig.extension.debug" class="Twig\Extension\DebugExtension">
+      <tag name="twig.extension"/>
+    </service>
+    <service id="twig.extension.weblink" class="Symfony\Bridge\Twig\Extension\WebLinkExtension">
+      <argument type="service" id="request_stack"/>
+    </service>
+    <service id="twig.configurator.environment" class="Symfony\Bundle\TwigBundle\DependencyInjection\Configurator\EnvironmentConfigurator">
+      <argument>F j, Y H:i</argument>
+      <argument>%d days</argument>
+      <argument>null</argument>
+      <argument>0</argument>
+      <argument>.</argument>
+      <argument>,</argument>
+    </service>
+    <service id="twig.runtime_loader" class="Twig\RuntimeLoader\ContainerRuntimeLoader">
+      <argument type="service" id=".service_locator.m_eDlXT"/>
+    </service>
+    <service id="twig.error_renderer.html" class="Symfony\Bridge\Twig\ErrorRenderer\TwigErrorRenderer">
+      <argument type="service" id="twig"/>
+      <argument type="service" id="error_handler.error_renderer.html"/>
+      <argument type="service">
+        <service class="bool">
+          <argument type="service" id="request_stack"/>
+          <argument>true</argument>
+          <factory class="Symfony\Bridge\Twig\ErrorRenderer\TwigErrorRenderer" method="isDebug"/>
+        </service>
+      </argument>
+    </service>
+    <service id="twig.runtime.serializer" class="Symfony\Bridge\Twig\Extension\SerializerRuntime">
+      <tag name="twig.runtime"/>
+      <argument type="service" id="serializer"/>
+    </service>
+    <service id="twig.extension.serializer" class="Symfony\Bridge\Twig\Extension\SerializerExtension">
+      <tag name="twig.extension"/>
+    </service>
+    <service id="controller.template_attribute_listener" class="Symfony\Bridge\Twig\EventListener\TemplateAttributeListener">
+      <tag name="kernel.event_subscriber"/>
+      <argument type="service" id="twig"/>
+    </service>
+    <service id="twig.command.debug" class="Symfony\Bridge\Twig\Command\DebugCommand">
+      <tag name="console.command"/>
+      <tag name="container.no_preload"/>
+      <argument type="service" id="twig"/>
+      <argument>/app</argument>
+      <argument>%kernel.bundles_metadata%</argument>
+      <argument>/app/templates</argument>
+      <argument type="service" id="debug.file_link_formatter" on-invalid="null"/>
+      <call method="setName">
+        <argument>debug:twig</argument>
+      </call>
+      <call method="setDescription">
+        <argument>Show a list of twig functions, filters, globals and tests</argument>
+      </call>
+    </service>
+    <service id="twig.command.lint" class="Symfony\Bundle\TwigBundle\Command\LintCommand">
+      <tag name="console.command"/>
+      <tag name="container.no_preload"/>
+      <argument type="service" id="twig"/>
+      <argument type="collection">
+        <argument>*.twig</argument>
+      </argument>
+      <call method="setName">
+        <argument>lint:twig</argument>
+      </call>
+      <call method="setDescription">
+        <argument>Lint a Twig template and outputs encountered errors</argument>
+      </call>
+    </service>
+    <service id="twig.missing_extension_suggestor" class="Twig\Extra\TwigExtraBundle\MissingExtensionSuggestor"/>
+    <service id=".instanceof.Symfony\Contracts\Service\ServiceSubscriberInterface.0.App\Controller\PaymentController" class="App\Controller\PaymentController" autowire="true" abstract="true"/>
+    <service id=".instanceof.Symfony\Bundle\FrameworkBundle\Controller\AbstractController.0.App\Controller\PaymentController" class="App\Controller\PaymentController" autowire="true" abstract="true"/>
+    <service id=".abstract.instanceof.App\Controller\PaymentController" class="App\Controller\PaymentController" autowire="true" autoconfigure="true" abstract="true"/>
+    <service id=".instanceof.Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepositoryInterface.0.App\Repository\CouponRepository" class="App\Repository\CouponRepository" autowire="true" abstract="true"/>
+    <service id=".abstract.instanceof.App\Repository\CouponRepository" class="App\Repository\CouponRepository" autowire="true" autoconfigure="true" abstract="true"/>
+    <service id=".instanceof.Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepositoryInterface.0.App\Repository\ProductRepository" class="App\Repository\ProductRepository" autowire="true" abstract="true"/>
+    <service id=".abstract.instanceof.App\Repository\ProductRepository" class="App\Repository\ProductRepository" autowire="true" autoconfigure="true" abstract="true"/>
+    <service id=".instanceof.Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepositoryInterface.0.App\Repository\TaxRepository" class="App\Repository\TaxRepository" autowire="true" abstract="true"/>
+    <service id=".abstract.instanceof.App\Repository\TaxRepository" class="App\Repository\TaxRepository" autowire="true" autoconfigure="true" abstract="true"/>
+    <service id=".instanceof.Symfony\Component\Validator\ConstraintValidatorInterface.0.App\Validator\ValidTaxNumberValidator" class="App\Validator\ValidTaxNumberValidator" autowire="true" abstract="true"/>
+    <service id=".abstract.instanceof.App\Validator\ValidTaxNumberValidator" class="App\Validator\ValidTaxNumberValidator" autowire="true" autoconfigure="true" abstract="true"/>
     <service id=".service_locator.w7.f4fT" class="Symfony\Component\DependencyInjection\ServiceLocator">
       <tag name="container.service_locator"/>
       <argument type="collection">
@@ -3364,9 +4240,10 @@
         <argument key="kernel:registerContainerConfiguration" type="service_closure" id=".service_locator.y4_Zrx."/>
       </argument>
     </service>
-    <service id=".service_locator.nrgc8tJ" class="Symfony\Component\DependencyInjection\ServiceLocator">
+    <service id=".service_locator.iysUnCu" class="Symfony\Component\DependencyInjection\ServiceLocator">
       <tag name="container.service_locator"/>
       <argument type="collection">
+        <argument key="App\Validator\ValidTaxNumberValidator" type="service_closure" id="App\Validator\ValidTaxNumberValidator"/>
         <argument key="Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntityValidator" type="service_closure" id="doctrine.orm.validator.unique"/>
         <argument key="Symfony\Component\Validator\Constraints\EmailValidator" type="service_closure" id="validator.email"/>
         <argument key="Symfony\Component\Validator\Constraints\ExpressionValidator" type="service_closure" id="validator.expression"/>
@@ -3441,9 +4318,13 @@
         <argument key="doctrine.orm.listeners.pdo_session_handler_schema_listener" type="service_closure" id="doctrine.orm.listeners.pdo_session_handler_schema_listener"/>
       </argument>
     </service>
-    <service id=".service_locator.Xbsa8iG" class="Symfony\Component\DependencyInjection\ServiceLocator">
+    <service id=".service_locator.kgJKdt5" class="Symfony\Component\DependencyInjection\ServiceLocator">
       <tag name="container.service_locator"/>
-      <argument type="collection"/>
+      <argument type="collection">
+        <argument key="App\Repository\CouponRepository" type="service_closure" id="App\Repository\CouponRepository"/>
+        <argument key="App\Repository\ProductRepository" type="service_closure" id="App\Repository\ProductRepository"/>
+        <argument key="App\Repository\TaxRepository" type="service_closure" id="App\Repository\TaxRepository"/>
+      </argument>
     </service>
     <service id=".service_locator.KLVvNIq" class="Symfony\Component\DependencyInjection\ServiceLocator">
       <tag name="container.service_locator"/>
@@ -3476,6 +4357,23 @@
       <argument type="service" id="request_stack"/>
       <argument>%env(bool:default::key:web:default:kernel.runtime_mode:)%</argument>
     </service>
+    <service id=".service_locator.O2p6Lk7" class="Symfony\Component\DependencyInjection\ServiceLocator">
+      <tag name="container.service_locator"/>
+      <argument type="collection">
+        <argument key="http_kernel" type="service_closure" id="http_kernel" on-invalid="ignore"/>
+        <argument key="parameter_bag" type="service_closure" id="parameter_bag" on-invalid="ignore"/>
+        <argument key="request_stack" type="service_closure" id="request_stack" on-invalid="ignore"/>
+        <argument key="router" type="service_closure" id="router.default" on-invalid="ignore"/>
+        <argument key="serializer" type="service_closure" id="serializer" on-invalid="ignore"/>
+        <argument key="twig" type="service_closure" id="twig" on-invalid="ignore"/>
+      </argument>
+    </service>
+    <service id=".service_locator.O2p6Lk7.App\Controller\PaymentController" class="Symfony\Component\DependencyInjection\ServiceLocator">
+      <tag name="container.service_locator_context" id="App\Controller\PaymentController"/>
+      <argument>App\Controller\PaymentController</argument>
+      <argument type="service" id="service_container"/>
+      <factory service=".service_locator.O2p6Lk7" method="withContext"/>
+    </service>
     <service id=".service_locator.PvoQzFT" class="Symfony\Component\DependencyInjection\ServiceLocator">
       <tag name="container.service_locator"/>
       <argument type="collection">
@@ -3500,6 +4398,18 @@
       <argument type="service" id="service_container"/>
       <factory service=".service_locator.cUcW89y" method="withContext"/>
     </service>
+    <service id=".service_locator.etVElvN" class="Symfony\Component\DependencyInjection\ServiceLocator">
+      <tag name="container.service_locator"/>
+      <argument type="collection">
+        <argument key="twig" type="service_closure" id="twig"/>
+      </argument>
+    </service>
+    <service id=".service_locator.etVElvN.twig.template_cache_warmer" class="Symfony\Component\DependencyInjection\ServiceLocator">
+      <tag name="container.service_locator_context" id="twig.template_cache_warmer"/>
+      <argument>twig.template_cache_warmer</argument>
+      <argument type="service" id="service_container"/>
+      <factory service=".service_locator.etVElvN" method="withContext"/>
+    </service>
     <service id=".service_locator._ju.bgC" class="Symfony\Component\DependencyInjection\ServiceLocator">
       <tag name="container.service_locator"/>
       <argument type="collection">
@@ -3522,6 +4432,10 @@
       <argument type="collection">
         <argument key="reverse_container" type="service_closure" id="reverse_container" on-invalid="ignore_uninitialized"/>
       </argument>
+    </service>
+    <service id=".service_locator.Xbsa8iG" class="Symfony\Component\DependencyInjection\ServiceLocator">
+      <tag name="container.service_locator"/>
+      <argument type="collection"/>
     </service>
     <service id=".service_locator.NBUFN6A" class="Symfony\Component\DependencyInjection\ServiceLocator">
       <tag name="container.service_locator"/>
@@ -3562,6 +4476,7 @@
       <call method="allowControllers">
         <argument type="collection">
           <argument>App\Kernel</argument>
+          <argument>App\Controller\PaymentController</argument>
           <argument>Doctrine\Bundle\DoctrineBundle\Controller\ProfilerController</argument>
         </argument>
       </call>
@@ -3874,6 +4789,20 @@
       <argument>false</argument>
       <argument type="service_closure" id="doctrine_migrations.version_command"/>
     </service>
+    <service id=".twig.command.debug.lazy" class="Symfony\Component\Console\Command\LazyCommand">
+      <argument>debug:twig</argument>
+      <argument type="collection"/>
+      <argument>Show a list of twig functions, filters, globals and tests</argument>
+      <argument>false</argument>
+      <argument type="service_closure" id="twig.command.debug"/>
+    </service>
+    <service id=".twig.command.lint.lazy" class="Symfony\Component\Console\Command\LazyCommand">
+      <argument>lint:twig</argument>
+      <argument type="collection"/>
+      <argument>Lint a Twig template and outputs encountered errors</argument>
+      <argument>false</argument>
+      <argument type="service_closure" id="twig.command.lint"/>
+    </service>
     <service id=".maker.auto_command.make_auth.lazy" class="Symfony\Component\Console\Command\LazyCommand">
       <argument>make:auth</argument>
       <argument type="collection"/>
@@ -4070,7 +4999,7 @@
     </service>
     <service id="console.command_loader" class="Symfony\Component\Console\CommandLoader\ContainerCommandLoader" public="true">
       <tag name="container.no_preload"/>
-      <argument type="service" id=".service_locator.MzP.1BK"/>
+      <argument type="service" id=".service_locator.X1q4pHB"/>
       <argument type="collection">
         <argument key="about">console.command.about</argument>
         <argument key="assets:install">console.command.assets_install</argument>
@@ -4129,6 +5058,9 @@
         <argument key="doctrine:migrations:status">doctrine_migrations.status_command</argument>
         <argument key="doctrine:migrations:up-to-date">doctrine_migrations.up_to_date_command</argument>
         <argument key="doctrine:migrations:version">doctrine_migrations.version_command</argument>
+        <argument key="nelmio:apidoc:dump">nelmio_api_doc.command.dump</argument>
+        <argument key="debug:twig">twig.command.debug</argument>
+        <argument key="lint:twig">twig.command.lint</argument>
         <argument key="make:auth">maker.auto_command.make_auth</argument>
         <argument key="make:command">maker.auto_command.make_command</argument>
         <argument key="make:twig-component">maker.auto_command.make_twig_component</argument>
@@ -4161,7 +5093,7 @@
         <argument key="make:webhook">maker.auto_command.make_webhook</argument>
       </argument>
     </service>
-    <service id=".service_locator.MzP.1BK" class="Symfony\Component\DependencyInjection\ServiceLocator">
+    <service id=".service_locator.X1q4pHB" class="Symfony\Component\DependencyInjection\ServiceLocator">
       <tag name="container.service_locator"/>
       <argument type="collection">
         <argument key="console.command.about" type="service_closure" id=".console.command.about.lazy"/>
@@ -4221,6 +5153,9 @@
         <argument key="doctrine_migrations.status_command" type="service_closure" id=".doctrine_migrations.status_command.lazy"/>
         <argument key="doctrine_migrations.up_to_date_command" type="service_closure" id=".doctrine_migrations.up_to_date_command.lazy"/>
         <argument key="doctrine_migrations.version_command" type="service_closure" id=".doctrine_migrations.version_command.lazy"/>
+        <argument key="nelmio_api_doc.command.dump" type="service_closure" id="nelmio_api_doc.command.dump"/>
+        <argument key="twig.command.debug" type="service_closure" id=".twig.command.debug.lazy"/>
+        <argument key="twig.command.lint" type="service_closure" id=".twig.command.lint.lazy"/>
         <argument key="maker.auto_command.make_auth" type="service_closure" id=".maker.auto_command.make_auth.lazy"/>
         <argument key="maker.auto_command.make_command" type="service_closure" id=".maker.auto_command.make_command.lazy"/>
         <argument key="maker.auto_command.make_twig_component" type="service_closure" id=".maker.auto_command.make_twig_component.lazy"/>
@@ -4250,6 +5185,13 @@
         <argument key="maker.auto_command.make_webhook" type="service_closure" id=".maker.auto_command.make_webhook.lazy"/>
       </argument>
     </service>
+    <service id=".service_locator.m_eDlXT" class="Symfony\Component\DependencyInjection\ServiceLocator">
+      <tag name="container.service_locator"/>
+      <argument type="collection">
+        <argument key="Symfony\Bridge\Twig\Extension\HttpKernelRuntime" type="service_closure" id="twig.runtime.httpkernel"/>
+        <argument key="Symfony\Bridge\Twig\Extension\SerializerRuntime" type="service_closure" id="twig.runtime.serializer"/>
+      </argument>
+    </service>
     <service id="App\Kernel" alias="kernel" public="true"/>
     <service id="Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface" alias="parameter_bag"/>
     <service id="Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface" alias="parameter_bag"/>
@@ -4270,7 +5212,7 @@
     <service id="Symfony\Component\DependencyInjection\ReverseContainer" alias="reverse_container"/>
     <service id="Symfony\Component\String\Slugger\SluggerInterface" alias="slugger"/>
     <service id="Symfony\Component\HttpKernel\Fragment\FragmentUriGeneratorInterface" alias="fragment.uri_generator"/>
-    <service id="error_renderer.html" alias="error_handler.error_renderer.html"/>
+    <service id="error_renderer.html" alias="twig.error_renderer.html"/>
     <service id="error_renderer" alias="error_handler.error_renderer.serializer"/>
     <service id=".Psr\Container\ContainerInterface $parameter_bag" alias="parameter_bag"/>
     <service id="Psr\Container\ContainerInterface $parameterBag" alias="parameter_bag"/>
@@ -4278,6 +5220,7 @@
     <service id="Psr\Cache\CacheItemPoolInterface" alias="cache.app"/>
     <service id="Symfony\Contracts\Cache\CacheInterface" alias="cache.app"/>
     <service id="Symfony\Contracts\Cache\TagAwareCacheInterface" alias="cache.app.taggable"/>
+    <service id="Symfony\Component\Asset\Packages" alias="assets.packages"/>
     <service id="Symfony\Component\ErrorHandler\ErrorRenderer\FileLinkFormatter" alias="debug.file_link_formatter"/>
     <service id="Symfony\Component\Stopwatch\Stopwatch" alias="debug.stopwatch"/>
     <service id="routing.loader.annotation" alias="routing.loader.attribute">
@@ -4343,20 +5286,32 @@
     <service id="Doctrine\ORM\EntityManagerInterface $defaultEntityManager" alias="doctrine.orm.default_entity_manager"/>
     <service id="doctrine.orm.default_entity_manager.event_manager" alias="doctrine.dbal.default_connection.event_manager"/>
     <service id="doctrine.migrations.metadata_storage" alias="doctrine.migrations.storage.table_storage"/>
+    <service id="nelmio_api_doc.controller.swagger" alias="nelmio_api_doc.controller.swagger_json" public="true"/>
+    <service id="nelmio_api_doc.generator" alias="nelmio_api_doc.generator.default" public="true"/>
+    <service id="Twig_Environment" alias="twig">
+      <deprecated package="symfony/twig-bundle" version="6.3">The "%alias_id%" service alias is deprecated, use "Twig\Environment" or "twig" instead.</deprecated>
+    </service>
+    <service id="Twig\Environment" alias="twig"/>
     <service id="container.env_var_processors_locator" alias=".service_locator.w7.f4fT" public="true"/>
+    <service id="twig.loader.filesystem" alias="twig.loader.native_filesystem"/>
     <service id="argument_resolver.controller_locator" alias=".service_locator.HBdvAhp"/>
     <service id="doctrine.id_generator_locator" alias=".service_locator.KLVvNIq"/>
+    <service id="twig.loader" alias="twig.loader.native_filesystem"/>
     <service id="Psr\Log\LoggerInterface" alias="logger"/>
+    <service id=".service_locator.9L433w3" alias="nelmio_api_doc.generator_locator"/>
     <service id=".service_locator.bJ.4HC5" alias=".service_locator.w7.f4fT"/>
     <service id=".service_locator.L.EDYUC" alias=".service_locator.HBdvAhp"/>
-    <service id=".service_locator.zOrwI6F" alias=".service_locator.nrgc8tJ"/>
+    <service id=".service_locator.svSpGhe" alias=".service_locator.iysUnCu"/>
     <service id=".service_locator.LMuqDDe" alias=".service_locator.VHsrTPK"/>
+    <service id=".service_locator.jUv.zyj" alias=".service_locator.O2p6Lk7"/>
     <service id="event_dispatcher" alias="debug.event_dispatcher" public="true"/>
     <service id="controller_resolver" alias="debug.controller_resolver"/>
     <service id="argument_resolver" alias="debug.argument_resolver"/>
     <service id="doctrine.migrations.migrations_factory" alias="doctrine.migrations.container_aware_migrations_factory"/>
+    <service id="twig.error_renderer.html.inner" alias="error_handler.error_renderer.html"/>
     <service id="doctrine.orm.default_metadata_driver" alias=".doctrine.orm.default_metadata_driver"/>
     <service id=".service_locator.gFlme_s" alias=".service_locator.y4_Zrx."/>
+    <service id=".service_locator.UJk7wXY" alias=".service_locator.O2p6Lk7"/>
     <service id=".service_locator.3bxtozr" alias=".service_locator._ju.bgC"/>
     <service id=".service_locator._kIAbz1" alias=".service_locator.TpoC7U9"/>
   </services>

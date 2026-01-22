@@ -19,6 +19,24 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+            - '../src/DTO/'
+            - '../src/Enum/'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    # Регистрация PaymentProcessor из внешнего пакета
+    Systemeio\TestForCandidates\PaymentProcessor\PaypalPaymentProcessor:
+        public: false
+
+    Systemeio\TestForCandidates\PaymentProcessor\StripePaymentProcessor:
+        public: false
+
+    # Регистрация адаптеров с тегом для фабрики
+    App\Service\Payment\PaypalPaymentAdapter:
+        tags: ['app.payment_processor']
+
+    App\Service\Payment\StripePaymentAdapter:
+        tags: ['app.payment_processor']
+
+    # Фабрика получает все адаптеры через tagged iterator
+    App\Service\Payment\PaymentProcessorFactory:
+        arguments:
+            $processors: !tagged_iterator app.payment_processor

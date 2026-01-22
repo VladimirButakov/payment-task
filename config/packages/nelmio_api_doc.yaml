@@ -1,0 +1,99 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: Payment API
+            description: REST API для расчета цены продукта и проведения оплаты
+            version: 1.0.0
+        paths:
+            /calculate-price:
+                post:
+                    tags: [Payment]
+                    summary: Расчет цены продукта
+                    description: Рассчитывает итоговую цену с учетом налога и купона
+                    requestBody:
+                        required: true
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    required: [product, taxNumber]
+                                    properties:
+                                        product:
+                                            type: integer
+                                            example: 1
+                                            description: ID продукта
+                                        taxNumber:
+                                            type: string
+                                            example: "DE123456789"
+                                            description: Налоговый номер (DE/IT/FR/GR)
+                                        couponCode:
+                                            type: string
+                                            example: "D15"
+                                            description: Код купона (опционально)
+                    responses:
+                        '200':
+                            description: Успешный расчет цены
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            price:
+                                                type: number
+                                                format: float
+                                                example: 116.56
+                        '400':
+                            description: Неверные данные
+                        '422':
+                            description: Ошибка валидации
+            /purchase:
+                post:
+                    tags: [Payment]
+                    summary: Проведение покупки
+                    description: Рассчитывает цену и проводит платеж
+                    requestBody:
+                        required: true
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    required: [product, taxNumber, paymentProcessor]
+                                    properties:
+                                        product:
+                                            type: integer
+                                            example: 1
+                                        taxNumber:
+                                            type: string
+                                            example: "IT12345678900"
+                                        couponCode:
+                                            type: string
+                                            example: "D15"
+                                        paymentProcessor:
+                                            type: string
+                                            enum: [paypal, stripe]
+                                            example: "paypal"
+                    responses:
+                        '200':
+                            description: Платеж успешно проведен
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            success:
+                                                type: boolean
+                                                example: true
+                                            price:
+                                                type: number
+                                                format: float
+                                                example: 116.56
+                                            message:
+                                                type: string
+                                                example: "Payment processed successfully"
+                        '400':
+                            description: Ошибка платежа
+                        '422':
+                            description: Ошибка валидации
+    areas:
+        path_patterns:
+            - ^/(?!_) # Документируем все маршруты кроме системных (начинающихся с _)

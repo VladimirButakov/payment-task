@@ -5,70 +5,95 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Coupon;
-use App\Entity\Product;
-use App\Entity\Tax;
 use App\Enum\CouponType;
+use App\Exception\CouponNotFoundException;
+use App\Exception\PaymentException;
+use App\Exception\ProductNotFoundException;
+use App\Exception\TaxNotFoundException;
 use App\Repository\CouponRepository;
 use App\Repository\ProductRepository;
 use App\Repository\TaxRepository;
+use App\Service\Dto\PriceCalculationData;
 
-class PriceCalculatorService
+/**
+ * Сервис расчета цены.
+ * Работает с Service DTO - не знает ничего о HTTP слое.
+ */
+class PriceCalculatorService implements PriceCalculatorInterface
 {
     public function __construct(
         private readonly ProductRepository $productRepository,
         private readonly TaxRepository $taxRepository,
         private readonly CouponRepository $couponRepository,
-    ) {
+    )
+    {
     }
 
     /**
      * Рассчитывает итоговую цену продукта с учетом налога и купона
-     *
-     * @throws \InvalidArgumentException если продукт не найден или налог не определен
      */
-    public function calculatePrice(int $productId, string $taxNumber, ?string $couponCode = null): float
+    public function calculate(PriceCalculationData $data): float
     {
-        $product = $this->productRepository->find($productId);
-        if (!$product) {
-            throw new \InvalidArgumentException(sprintf('Product with ID %d not found', $productId));
+        if ($data->productId <= 0) {
+            throw new PaymentException('Product ID must be positive');
         }
 
-        $countryCode = strtoupper(substr($taxNumber, 0, 2));
+        $taxNumber = trim($data->taxNumber);
+        if ($taxNumber === '') {
+            throw new PaymentException('Tax number is required');
+        }
+
+        $product = $this->productRepository->find($data->productId);
+        if (!$product) {
+            throw new ProductNotFoundException($data->productId);
+        }
+
+        $countryCode = $this->extractCountryCode($taxNumber);
         $tax = $this->taxRepository->findByCountryCode($countryCode);
         if (!$tax) {
-            throw new \InvalidArgumentException(sprintf('Tax configuration not found for country %s', $countryCode));
+            throw new TaxNotFoundException($countryCode);
         }
 
+        $this->assertTaxNumberMatchesPattern($taxNumber, $tax->getTaxNumberPattern(), $countryCode);
+
         $coupon = null;
-        if ($couponCode) {
+        $couponCode = $data->couponCode !== null ? trim($data->couponCode) : null;
+        if ($couponCode !== null && $couponCode !== '') {
             $coupon = $this->couponRepository->findOneBy(['code' => $couponCode]);
             if (!$coupon) {
-                throw new \InvalidArgumentException(sprintf('Coupon with code "%s" not found', $couponCode));
+                throw new CouponNotFoundException($couponCode);
             }
         }
 
-        return $this->calculate($product, $tax, $coupon);
-    }
-
-    /**
-     * Выполняет расчет цены: (базовая цена - скидка) + налог
-     */
-    private function calculate(Product $product, Tax $tax, ?Coupon $coupon): float
-    {
         $basePrice = (float) $product->getPrice();
         
         // Применяем скидку
-        $priceAfterDiscount = $basePrice;
-        if ($coupon) {
-            $priceAfterDiscount = $this->applyDiscount($basePrice, $coupon);
-        }
+        $priceAfterDiscount = $coupon
+            ? $this->applyDiscount($basePrice, $coupon) 
+            : $basePrice;
 
         // Применяем налог к цене после скидки
         $taxRate = (float) $tax->getRate();
-        $finalPrice = $priceAfterDiscount * (1 + $taxRate / 100);
+        $finalPrice = $priceAfterDiscount * (PriceCalculatorInterface::BASE_MULTIPLIER + $taxRate / PriceCalculatorInterface::PERCENT_DIVISOR);
 
-        // Округляем до 2 знаков
-        return round($finalPrice, 2);
+        return round($finalPrice, PriceCalculatorInterface::MONEY_SCALE);
+    }
+
+    private function extractCountryCode(string $taxNumber): string
+    {
+        if (strlen($taxNumber) < PriceCalculatorInterface::TAX_NUMBER_MIN_LENGTH) {
+            throw new PaymentException('Invalid tax number: too short');
+        }
+
+        return strtoupper(substr($taxNumber, 0, 2));
+    }
+
+    private function assertTaxNumberMatchesPattern(string $taxNumber, string $pattern, string $countryCode): void
+    {
+        $regex = '/' . $pattern . '/';
+        if (!preg_match($regex, $taxNumber)) {
+            throw new PaymentException(sprintf('Invalid tax number "%s" for country %s', $taxNumber, $countryCode));
+        }
     }
 
     /**
@@ -79,9 +104,8 @@ class PriceCalculatorService
         $discountValue = (float) $coupon->getValue();
 
         return match ($coupon->getType()) {
-            CouponType::FIXED => max(0, $price - $discountValue),
-            CouponType::PERCENT => $price * (1 - $discountValue / 100),
+            CouponType::FIXED => max(PriceCalculatorInterface::MIN_PRICE, $price - $discountValue),
+            CouponType::PERCENT => $price * (PriceCalculatorInterface::BASE_MULTIPLIER - $discountValue / PriceCalculatorInterface::PERCENT_DIVISOR),
         };
     }
 }
-
